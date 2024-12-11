@@ -4,7 +4,7 @@ import Pusher from "pusher-js";
 
 const App = () => {
   const positiveWords = ["kekw", "kekleo", "omegalul", "clap","cheer","laugh"];
-  const negativeWords = ["patrick", "angry","patrik","disapoint","nontent","shit","fuck","gay","quit"];
+  const negativeWords = ["patrick", "angry","patrik","disapoint","nontent","shit","fuck","gay","quit","rigged","scam","boring"];
   const nyckelAPI = "https://www.nyckel.com/v1/functions/text-sentiment-analyzer/invoke";
 
   const [messages, setMessages] = useState([]);
