@@ -69,7 +69,9 @@ const App = () => {
 
   return (
     <div style={{ fontFamily: "Arial, sans-serif", padding: "20px" }}>
-      <h1>Not Rigged Chat Mood Meter</h1>
+      <title>AI Chat Mood</title>
+      <meta name="description" content="A Not Rigged AI Chat Mood Detector"/>
+      <h1>Not Rigged AI Chat Mood Detector</h1>
 
       {/* Mood Bar */}
       <div
