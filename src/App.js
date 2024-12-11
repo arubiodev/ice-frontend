@@ -7,7 +7,8 @@ const App = () => {
 
   const [messages, setMessages] = useState([]);
   const [currentMoodScore, setCurrentMoodScore] = useState(0);
-  const rollingWindowSize = 10; // Last 10 messages
+  const [smoothedMoodScore, setSmoothedMoodScore] = useState(0);
+  const rollingWindowSize = 20; // Larger window for smoothing
 
   useEffect(() => {
     const pusher = new Pusher("32cbd69e4b950bf97679", {
@@ -30,16 +31,8 @@ const App = () => {
 
   const handleMessage = async (message) => {
     try {
-      // Send message to backend for sentiment classification
       const response = await axios.post("https://ice-backend-production.up.railway.app/analyze", { text: message });
       const classification = response.data.sentiment;
-      let scoreChange = 0;
-
-      if (classification === "Negative") {
-        scoreChange = -10;
-      } else if (classification === "Positive") {
-        scoreChange = 10;
-      }
 
       setMessages((prevMessages) => {
         const updatedMessages = [...prevMessages, { text: message, sentiment: classification }];
@@ -54,6 +47,10 @@ const App = () => {
         }, 0);
 
         setCurrentMoodScore(newMoodScore);
+
+        // Update smoothed score using a weighted average
+        setSmoothedMoodScore((prevSmoothed) => prevSmoothed * 0.8 + newMoodScore * 0.2);
+
         return updatedMessages;
       });
     } catch (error) {
@@ -62,8 +59,8 @@ const App = () => {
   };
 
   const getMoodColor = () => {
-    if (currentMoodScore > 0) return "green";
-    if (currentMoodScore < 0) return "red";
+    if (smoothedMoodScore > 0) return "green";
+    if (smoothedMoodScore < 0) return "red";
     return "gray";
   };
 
@@ -76,14 +73,15 @@ const App = () => {
         style={{
           height: "30px",
           background: getMoodColor(),
-          width: `${Math.min(100, Math.abs(currentMoodScore))}%`,
-          transition: "width 0.5s ease",
+          width: `${Math.min(100, Math.abs(smoothedMoodScore))}%`,
+          transition: "width 1s ease",
           margin: "10px 0",
         }}
       ></div>
-      <p>Current Score: {currentMoodScore}</p>
+      <p>Current Score: {Math.round(smoothedMoodScore)}</p>
 
-      {/* Message List */}
+      {/* Messages in Window */}
+      <h3>Messages in the Current Window ({messages.length}/{rollingWindowSize}):</h3>
       <ul style={{ listStyle: "none", padding: 0 }}>
         {messages.map((msg, index) => (
           <li
