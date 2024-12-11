@@ -3,8 +3,6 @@ import axios from "axios";
 import Pusher from "pusher-js";
 
 const App = () => {
-  const positiveWords = ["kekw", "kekleo", "omegalul", "clap","cheer","laugh","pog","lulw","haha"];
-  const negativeWords = ["patrick", "angry","patrik","disapoint","nontent","shit","fuck","gay","quit","rigged","scam","boring","kick","leech","fake","dumb","retard","bs","wtf","pressed","beta","scam","rob","pdf"];
   const nyckelAPI = "https://www.nyckel.com/v1/functions/text-sentiment-analyzer/invoke";
 
   const [messages, setMessages] = useState([]);
@@ -31,49 +29,37 @@ const App = () => {
   }, []);
 
   const handleMessage = async (message) => {
-    let normalizedMessage = message.toLowerCase();
-    let classification = "Neutral";
-    let scoreChange = 0;
-  
-    // Check for positive or negative words
-    if (negativeWords.some((word) => normalizedMessage.includes(word))) {
-      classification = "Negative";
-      scoreChange = -10;
-    } else if (positiveWords.some((word) => normalizedMessage.includes(word))) {
-      classification = "Positive";
-      scoreChange = 10;
-    } else {
-      // If not matched, classify via the local Node.js server
-      try {
-        const response = await axios.post("https://ice-backend-production.up.railway.app/analyze", { text: message });
-        classification = response.data.sentiment;
-        if (classification === "Negative") {
-          scoreChange = -10;
-        } else if (classification === "Positive") {
-          scoreChange = 10;
+    try {
+      // Send message to backend for sentiment classification
+      const response = await axios.post("https://ice-backend-production.up.railway.app/analyze", { text: message });
+      const classification = response.data.sentiment;
+      let scoreChange = 0;
+
+      if (classification === "Negative") {
+        scoreChange = -10;
+      } else if (classification === "Positive") {
+        scoreChange = 10;
+      }
+
+      setMessages((prevMessages) => {
+        const updatedMessages = [...prevMessages, { text: message, sentiment: classification }];
+        if (updatedMessages.length > rollingWindowSize) {
+          updatedMessages.shift();
         }
-      } catch (error) {
-        console.error("Error classifying message:", error);
-      }
+
+        const newMoodScore = updatedMessages.reduce((acc, msg) => {
+          if (msg.sentiment === "Positive") return acc + 10;
+          if (msg.sentiment === "Negative") return acc - 10;
+          return acc;
+        }, 0);
+
+        setCurrentMoodScore(newMoodScore);
+        return updatedMessages;
+      });
+    } catch (error) {
+      console.error("Error classifying message:", error);
     }
-  
-    setMessages((prevMessages) => {
-      const updatedMessages = [...prevMessages, { text: message, sentiment: classification }];
-      if (updatedMessages.length > rollingWindowSize) {
-        updatedMessages.shift();
-      }
-  
-      const newMoodScore = updatedMessages.reduce((acc, msg) => {
-        if (msg.sentiment === "Positive") return acc + 10;
-        if (msg.sentiment === "Negative") return acc - 10;
-        return acc;
-      }, 0);
-  
-      setCurrentMoodScore(newMoodScore);
-      return updatedMessages;
-    });
   };
-  
 
   const getMoodColor = () => {
     if (currentMoodScore > 0) return "green";
